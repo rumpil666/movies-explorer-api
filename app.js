@@ -32,14 +32,14 @@ app.get('/crash-test', () => {
 app.post('/signin', validationLogin, login);
 app.post('/signup', validationCreateUser, createUser);
 
+app.use(auth);
+
 app.use('/users', userRouter);
 app.use('/movies', movieRouter);
 
 app.use('*', (req, res, next) => {
   next(new NotFoundError('Страница не найдена'));
 });
-
-app.use(auth);
 
 app.use(errorLogger);
 
