@@ -4,14 +4,18 @@ const httpConstants = require('http2').constants;
 const User = require('../models/user');
 const NotFoundError = require('../errors/NotFoundError');
 const ConflictError = require('../errors/ConflictError');
+const config = require('../utils/config');
 
-const { NODE_ENV, JWT_SECRET } = process.env;
+const {
+  DUPLICATE_EMAIL_ERROR_TEXT,
+  NOT_FOUND_USER_ERROR_TEXT,
+} = require('../utils/errorMessage');
 
 module.exports.login = (req, res, next) => {
   const { email, password } = req.body;
   return User.findUserByCredentials(email, password)
     .then((user) => {
-      const token = jwt.sign({ _id: user._id }, NODE_ENV === 'production' ? JWT_SECRET : 'server-keyri', { expiresIn: '7d' });
+      const token = jwt.sign({ _id: user._id }, config.JWT_SECRET, { expiresIn: '7d' });
       res.send({ token });
     })
     .catch(next);
@@ -20,6 +24,18 @@ module.exports.login = (req, res, next) => {
 module.exports.getUsers = (req, res, next) => {
   User.find({})
     .then((users) => res.send(users))
+    .catch(next);
+};
+
+module.exports.getCurrentUser = (req, res, next) => {
+  User.findById(req.user._id)
+    .then((user) => {
+      if (!user) {
+        throw new NotFoundError(NOT_FOUND_USER_ERROR_TEXT);
+      } else {
+        res.send(user);
+      }
+    })
     .catch(next);
 };
 
@@ -39,7 +55,7 @@ module.exports.createUser = (req, res, next) => {
     }))
     .catch((e) => {
       if (e.code === 11000) {
-        next(new ConflictError('Такой пользователь уже существует.'));
+        next(new ConflictError(DUPLICATE_EMAIL_ERROR_TEXT));
       } else {
         next(e);
       }
@@ -55,10 +71,16 @@ module.exports.updateUser = (req, res, next) => {
   )
     .then((user) => {
       if (!user) {
-        next(new NotFoundError('Пользователь не найден'));
+        next(new NotFoundError(NOT_FOUND_USER_ERROR_TEXT));
       } else {
         res.send(user);
       }
     })
-    .catch(next);
+    .catch((e) => {
+      if (e.code === 11000) {
+        next(new ConflictError(DUPLICATE_EMAIL_ERROR_TEXT));
+      } else {
+        next(e);
+      }
+    });
 };

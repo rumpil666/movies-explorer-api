@@ -1,4 +1,5 @@
 const httpConstants = require('http2').constants;
+const { SERVER_ERROR_TEXT } = require('../utils/errorMessage');
 
 const errorHandler = (err, req, res, next) => {
   const status = err.statusCode;
@@ -6,7 +7,7 @@ const errorHandler = (err, req, res, next) => {
   const { message } = err;
   if (!status) {
     res.status(httpConstants.HTTP_STATUS_INTERNAL_SERVER_ERROR).send({
-      message: 'Server Error',
+      message: SERVER_ERROR_TEXT,
     });
   } else {
     res.status(status).send({

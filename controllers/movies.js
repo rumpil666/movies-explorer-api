@@ -3,6 +3,11 @@ const Movie = require('../models/movie');
 const NotFoundError = require('../errors/NotFoundError');
 const ForbiddenError = require('../errors/ForbiddenError');
 
+const {
+  NOT_FOUND_MOVIE_ERROR_TEXT,
+  ACCESS_ERROR_TEXT,
+} = require('../utils/errorMessage');
+
 module.exports.getMovies = (req, res, next) => {
   Movie.find({ owner: req.user._id }).sort({ createdAt: -1 })
     .populate(['owner'])
@@ -23,9 +28,9 @@ module.exports.deleteMovie = (req, res, next) => {
     .populate(['owner'])
     .then((movie) => {
       if (!movie) {
-        throw new NotFoundError('Такого фильма не существует');
+        throw new NotFoundError(NOT_FOUND_MOVIE_ERROR_TEXT);
       } else if (!movie.owner.equals(req.user._id)) {
-        throw new ForbiddenError('Нельзя удалить чужой фильм');
+        throw new ForbiddenError(ACCESS_ERROR_TEXT);
       } else {
         Movie.findByIdAndRemove(movieId)
           .then((deletedMovie) => res.status(200).send(deletedMovie))
